@@ -1,4 +1,4 @@
-# **This is a shader file for MagicaVoxel.0.99.7.1.**
+# **This is a shader for MagicaVoxel.0.99.7.1**
 
 Simply put under MagicaVoxel's shader folder and it will be available on next boot up.
 
