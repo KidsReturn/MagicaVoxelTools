@@ -2,12 +2,12 @@
 // author : 'malinfei'
 // arg : { name = 'Mode'  var = 'm_mode'  range = '0 2'  value = '0'  step = '1'  precision = '0' }
 // arg : { name = 'FillColor'  var = 'm_fill_color'  range = '0 255'  value = '0'  step = '1'  precision = '0' }
-// arg : { name = 'Radius'  var = 'm_radius'  range = '4 127'  value = '7'  step = '1'  precision = '0' }
+// arg : { name = 'Radius'  var = 'm_radius'  range = '4 127'  value = '7'  step = '2'  precision = '0' }
 // arg : { name = 'Rotation'  var = 'm_ration'  range = '0 2'  value = '0'  step = '1'  precision = '0' }
 // xs_end
 
 int mode = int(m_mode);											// 0: fill volume, 1: only one
-int radius = int(m_radius);										// not include center
+int radius = int(floor(m_radius * 0.5) * 2 + 1);				// not include center, require odd number
 int rot = int(m_ration);
 // runtime
 int diameter = radius * 2;										// not include center
