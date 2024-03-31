@@ -14,9 +14,16 @@ few click with face tool, you will be able to create hexagon-based terrain:
 
 # **Arguments:**
 
-  Mode: 0 - fill entire volume, 1 - only generate one hexagon
+  Mode: 
+  
+   0 - fill volume using AltColor on border, 
+   ![屏幕截图 2024-03-31 145205](https://github.com/KidsReturn/MagicaVoxelShader/assets/41110770/9ac3299d-137d-4413-a142-8dba6e468e4c)
+  1 - fill volume using AltColor on inside, 
+   ![屏幕截图 2024-03-31 145225](https://github.com/KidsReturn/MagicaVoxelShader/assets/41110770/ec332c86-ca9d-402c-bba5-ad2424cc3d94)
+   2 - only generate one hexagon
+    ![屏幕截图 2024-03-31 145118](https://github.com/KidsReturn/MagicaVoxelShader/assets/41110770/de6dad66-9527-4512-8ee3-ee21b26e6fb8)
 	
-  FillColor: index color to fill blanks
+  AltColor: index color to fill blanks/border
 	
   Radius: size of the hexagon
 	
