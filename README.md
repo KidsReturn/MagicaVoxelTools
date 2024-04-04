@@ -1,8 +1,6 @@
-# **Few tools i made while using MagicaVoxel**
+# **Code**
 
-## **Code**
-
-### **Merge scene objects**
+## **Merge scene objects**
 
 Goal of these code is to create a work flow like this: 
 
@@ -17,6 +15,7 @@ Couple things i noticed:
 3. Voxel data in exported file is arranged in local space, not rearranged with transform while exporting.
 
 Here is two functions that address these issues while using ogt_vox and voxel plugin.
+
 ```
 bool MagicaVox::MergeSceneData(const ogt_vox_scene* InScene, TPair<FVoxelIntBox, TArray<uint8>>& OutData)
 {
@@ -117,10 +116,10 @@ bool MagicaVox::UnifyModelData(const ogt_vox_model* InModel, const FMatrix44f& I
 }
 ```
 
-## **Shader**
+# **Shader**
 Simply put under MagicaVoxel's shader folder and it will be available on next boot up.
 
-### **Hexagon Generator**
+## **Hexagon Generator**
 
 You can easily generate hexagon tile using shader tool like this:
 
@@ -130,7 +129,7 @@ few click with face tool, you will be able to create hexagon-based terrain:
 
 ![image](https://github.com/KidsReturn/MagicaVoxelShader/assets/41110770/4dcd5e8e-c541-4c3e-af35-6b445036aa18)
 
-### **Arguments:**
+## **Arguments:**
 
   Mode: 
   
