@@ -12,7 +12,7 @@ int rot = int(m_ration);
 // runtime
 int diameter = radius * 2;										// not include center
 float step = 0.5;												// step = 2
-int minLineSize = (radius - floor(radius * step)) * 2 + 1;
+int minLineSize = int((radius - floor(radius * step)) * 2 + 1);
 int yOffset = diameter + minLineSize - 1;
 float borderColor = mode == 0 ? float(m_alt_color) : i_color_index;
 float fillColor = mode == 0 ? i_color_index : float(m_alt_color);
@@ -20,10 +20,10 @@ float fillColor = mode == 0 ? i_color_index : float(m_alt_color);
 float CalcHexagon(vec3 volume_size, vec3 v)
 {
 	vec2 c = mode == 2 ? vec2(radius, radius) : vec2(floor(v.x / diameter) * diameter + radius, floor(v.y / yOffset) * yOffset + radius);
-	int x = floor(v.x);											// v is at the center of voxel, such as vec3( 1.5, 2.5, 4.5 )
-	int y = floor(v.y);
-	int x2c = abs(x - c.x);
-	int y2c = abs(y - c.y);
+	float x = floor(v.x);										// v is at the center of voxel, such as vec3( 1.5, 2.5, 4.5 )
+	float y = floor(v.y);
+	float x2c = abs(x - c.x);
+	float y2c = abs(y - c.y);
 	if (x2c <= radius && y2c <= radius - floor(x2c * step))
 	{
 		// 0: border, 1: inside
@@ -33,6 +33,7 @@ float CalcHexagon(vec3 volume_size, vec3 v)
 	{
 		return mod(x - radius, diameter) == 0 ? borderColor : fillColor;
 	}
+	return 0.f;
 }
 
 float map(vec3 v) 
