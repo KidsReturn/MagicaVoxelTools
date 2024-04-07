@@ -31,7 +31,10 @@ float CalcHexagon(vec3 volume_size, vec3 v)
 	}
 	else if (mode != 2)
 	{
-		return mod(x - radius + 0.5, diameter) <= 0.5 ? borderColor : fillColor;		// mod = x - y * floor(x / y). don't know why offset by 0.5 will fix some calculation error
+		// mod = x - y * floor(x / y). 
+		// don't know why offset by 0.5 will fix some calculation error on another PC. maybe platform issue?
+		// return mod(x - radius + 0.5, diameter) <= 0.5 ? borderColor : fillColor;		// try these if some lines missing.
+		return mod(x - radius, diameter) == 0.f ? borderColor : fillColor;
 	}
 	return 0.f;
 }
