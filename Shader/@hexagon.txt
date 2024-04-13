@@ -1,60 +1,220 @@
 // xs_begin
 // author : 'malinfei'
-// arg : { name = 'Mode'  var = 'm_mode'  range = '0 2'  value = '0'  step = '1'  precision = '0' }
+// arg : { name = 'Mode'  var = 'm_mode'  range = '0 3'  value = '0'  step = '1'  precision = '0' }
 // arg : { name = 'AltColor'  var = 'm_alt_color'  range = '0 255'  value = '0'  step = '1'  precision = '0' }
-// arg : { name = 'Radius'  var = 'm_radius'  range = '4 127'  value = '7'  step = '2'  precision = '0' }
+// arg : { name = 'Radius'  var = 'm_radius'  range = '4 127'  value = '9'  step = '2'  precision = '0' }
 // arg : { name = 'Rotation'  var = 'm_ration'  range = '0 3'  value = '0'  step = '1'  precision = '0' }
 // xs_end
 
-int mode = int(m_mode);											// 0: fill volume using AltColor on border, 1: fill volume using AltColor on inside, 2: only one
-int radius = int(floor(m_radius * 0.5) * 2 + 1);				// not include center, require odd number
+// 0: fill volume with current color index and AltColor on border
+// 1: fill volume with AltColor and current color index on border
+// 2: only one
+// 3: expand border with selected color(just click execute shader!)
+int mode = int(m_mode);											
+int radius = int(floor(m_radius * 0.5) * 2 + 1);						// not include center, require odd number
 int rot = int(m_ration);
 // runtime
-int diameter = radius * 2;										// not include center
-float step = 0.5;												// step = 2
-int minLineSize = int((radius - floor(radius * step)) * 2 + 1);
-int yOffset = diameter + minLineSize - 1;
+bool bMultiHexagon = mode != 2;
+bool bExpandMode = mode == 3;
 float borderColor = mode == 0 ? float(m_alt_color) : i_color_index;
 float fillColor = mode == 0 ? i_color_index : float(m_alt_color);
+float step = 0.5;														// step = 2
+int diameter = radius * 2;												// not include center
+int lineSize = int((radius - floor(radius * step)) * 2 + 1);
+int halfLineSize = int(floor(lineSize * 0.5));
+int oneRowOffset = radius + halfLineSize;
+int twoRowOffset = diameter + lineSize - 1;
 
-float CalcHexagon(vec3 volume_size, vec3 v)
+vec3 ApplyRotation(vec3 v, bool bReverse)
 {
-	vec2 c = mode == 2 ? vec2(radius, radius) : vec2(floor(v.x / diameter) * diameter + radius, floor(v.y / yOffset) * yOffset + radius);
-	float x = floor(v.x);										// v is at the center of voxel, such as vec3( 1.5, 2.5, 4.5 )
-	float y = floor(v.y);
-	float x2c = abs(x - c.x);
-	float y2c = abs(y - c.y);
+	if (rot == 0) 
+	{
+		return bReverse ? v.yxz : v.yxz;
+	}
+	else if (rot == 2) 
+	{
+		return bReverse ? v.yzx : v.zxy;
+	} 
+	else if (rot == 3) 
+	{
+		return bReverse ? v.zyx : v.zyx;
+	}
+	return v;
+}
+
+float ChooseColor(float b)
+{
+	return b == 1 ? borderColor : (b == 2 ? fillColor : 0);
+}
+
+vec3 GetCenter(vec3 v, bool bDiagonal)
+{
+	float xStep = floor(v.x / diameter);
+	float yStep = floor(v.y / twoRowOffset);
+	float xDiagStep = floor((v.x + radius) / diameter);
+	float yDiagStep = floor((v.y + oneRowOffset) / twoRowOffset);
+	// radius - oneRowOffset = -halfLineSize
+	return bDiagonal ? vec3(xDiagStep * diameter, yDiagStep * twoRowOffset - halfLineSize, v.z) : vec3(xStep * diameter + radius, yStep * twoRowOffset + radius, v.z);
+}
+
+float GetSharedColor(float cp, vec3 c, vec3 v, float oc)
+{
+	if (cp != 0)
+	{
+		if (cp <= 2 || cp == 12)
+		{
+			// top right
+			if (voxel(ApplyRotation(c + vec3(radius, oneRowOffset, 0), true)) == i_color_index)
+			{
+				return i_color_index;
+			}
+		}
+		if (2 <= cp && cp <= 4)
+		{
+			// right
+			if (voxel(ApplyRotation(c + vec3(diameter, 0, 0), true)) == i_color_index)
+			{
+				return i_color_index;
+			}
+		}
+		if (4 <= cp && cp <= 6)
+		{
+			// bottom right
+			if (voxel(ApplyRotation(c + vec3(radius, -oneRowOffset, 0), true)) == i_color_index)
+			{
+				return i_color_index;
+			}
+		} 
+		if (6 <= cp && cp <= 8)
+		{
+			// bottom left
+			if (voxel(ApplyRotation(c + vec3(-radius, -oneRowOffset, 0), true)) == i_color_index)
+			{
+				return i_color_index;
+			}
+		}
+		if (8 <= cp && cp <= 10)
+		{
+			// left
+			if (voxel(ApplyRotation(c + vec3(-diameter, 0, 0), true)) == i_color_index)
+			{
+				return i_color_index;
+			}
+		}
+		if (10 <= cp && cp <= 12)
+		{
+			// top left
+			if (voxel(ApplyRotation(c + vec3(-radius, oneRowOffset, 0), true)) == i_color_index)
+			{
+				return i_color_index;
+			}
+		}
+	}
+	return oc;
+}
+
+float IsInbound(vec3 c, vec3 v)
+{
+	vec3 dist = floor(v - c);	// v is at the center of voxel, such as vec3( 1.5, 2.5, 4.5 )
+	float x2c = abs(dist.x);
+	float y2c = abs(dist.y);
+	// 0 = outside 1 = border 2 = inside 
 	if (x2c <= radius && y2c <= radius - floor(x2c * step))
 	{
-		// 0: border, 1: inside
-		return x2c == radius || y2c == radius - floor(x2c * step) ? borderColor : fillColor;
+		return x2c == radius || y2c == radius - floor(x2c * step) ? 1 : 2;
 	}
-	else if (mode != 2)
+}
+
+float GetBorderClockPos(vec3 c, vec3 v)
+{
+	// 0 means invalid
+	float b = IsInbound(c, v);
+	if (b == 1)
 	{
-		// mod = x - y * floor(x / y). 
-		// don't know why offset by 0.5 will fix some calculation error on another PC. maybe platform issue?
-		// return mod(x - radius + 0.5, diameter) <= 0.5 ? borderColor : fillColor;		// try these if some lines missing.
-		return mod(x - radius, diameter) == 0.f ? borderColor : fillColor;
+		// on border we check diagonal
+		vec3 dist = floor(v - c);
+		bool bTop = dist.y >= 0;		// y == 0 doesn't have specific meaning
+		bool bLeft = dist.x < 0;
+		if (bTop)
+		{
+			if (dist.y == radius && dist.x == 0)
+			{
+				return 12;
+			}
+			else if (dist.y >= halfLineSize)
+			{
+				return abs(dist.x) == radius ? (bLeft ? 10 : 2) : (bLeft ? 11 : 1);
+			}
+			else
+			{
+				return bLeft ? 9 : 3;
+			}
+		}
+		else
+		{
+			if (dist.y == -radius && dist.x == 0)
+			{
+				return 6;
+			}
+			else if (dist.y <= -halfLineSize)
+			{
+				return abs(dist.x) == radius ? (bLeft ? 8 : 4) : (bLeft ? 7 : 5);
+			}
+			else
+			{
+				return bLeft ? 9 : 3;
+			}
+		}
 	}
-	return 0.f;
+	return 0;
+}
+
+float GenerateHexagon(vec3 volume_size, vec3 v)
+{
+	if (bMultiHexagon)
+	{
+		vec3 c = GetCenter(v, false);
+		float b = IsInbound(c, v);
+		if (b != 0)
+		{
+			return ChooseColor(b);
+		}
+		// try diagoanl
+		c = GetCenter(v, true);
+		return ChooseColor(IsInbound(c, v));
+	}
+	else
+	{
+		return ChooseColor(IsInbound(vec3(radius, radius, v.z), v));
+	}
+}
+
+float ExpandHexagon(vec3 v)
+{
+	float oc = voxel(ApplyRotation(v, true));
+	if (oc == 0)
+	{
+		vec3 c = GetCenter(v, false);
+		float cp = GetBorderClockPos(c, v);
+		if (cp != 0)
+		{
+			return voxel(ApplyRotation(c, true)) == i_color_index ? i_color_index : GetSharedColor(cp, c, v, oc);
+		}
+		else
+		{
+			// try diagoanl
+			c = GetCenter(v, true);
+			cp = GetBorderClockPos(c, v);
+			if (cp != 0)
+			{
+				return voxel(ApplyRotation(c, true)) == i_color_index ? i_color_index : GetSharedColor(cp, c, v, oc);
+			}
+		}
+	}
+	return oc;
 }
 
 float map(vec3 v) 
 {
-	if (rot == 0) 
-	{
-		return CalcHexagon(i_volume_size.yxz, v.yxz);
-	}
-	else if (rot == 1) 
-	{
-		return CalcHexagon(i_volume_size, v);
-	} 
-	else if (rot == 2) 
-	{
-		return CalcHexagon(i_volume_size.zxy, v.zxy);
-	} 
-	else if (rot == 3) 
-	{
-		return CalcHexagon(i_volume_size.zyx, v.zyx);
-	}
+	return bExpandMode ? ExpandHexagon(ApplyRotation(v, false)) : GenerateHexagon(ApplyRotation(i_volume_size, false), ApplyRotation(v, false));
 }
