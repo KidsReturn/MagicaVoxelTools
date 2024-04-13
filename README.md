@@ -131,17 +131,22 @@ few click with face tool, you will be able to create hexagon-based terrain:
 
 ## **Arguments:**
 
-  Mode: 
-  
-   0 - fill volume using AltColor on border, 
-   ![屏幕截图 2024-03-31 145205](https://github.com/KidsReturn/MagicaVoxelShader/assets/41110770/9ac3299d-137d-4413-a142-8dba6e468e4c)
-  1 - fill volume using AltColor on inside, 
-   ![屏幕截图 2024-03-31 145225](https://github.com/KidsReturn/MagicaVoxelShader/assets/41110770/ec332c86-ca9d-402c-bba5-ad2424cc3d94)
-   2 - only generate one hexagon
-    ![屏幕截图 2024-03-31 145118](https://github.com/KidsReturn/MagicaVoxelShader/assets/41110770/de6dad66-9527-4512-8ee3-ee21b26e6fb8)
+Mode:
+
+0 - fill volume with current color index and AltColor on border
+![屏幕截图 2024-03-31 145205](https://github.com/KidsReturn/MagicaVoxelShader/assets/41110770/9ac3299d-137d-4413-a142-8dba6e468e4c)
+
+1 - ill volume with AltColor and current color index on border
+![屏幕截图 2024-03-31 145225](https://github.com/KidsReturn/MagicaVoxelShader/assets/41110770/ec332c86-ca9d-402c-bba5-ad2424cc3d94)
+
+2 - only generate one hexagon
+![屏幕截图 2024-03-31 145118](https://github.com/KidsReturn/MagicaVoxelShader/assets/41110770/de6dad66-9527-4512-8ee3-ee21b26e6fb8)
+
+3 - expand border with selected color(just click execute shader!)
+![Snipaste_2024-04-13_15-27-55](https://github.com/KidsReturn/MagicaVoxelTools/assets/41110770/69dec31b-a815-407e-befa-5e4eb97007a3)
+
+AltColor: index color to fill blanks/border
 	
-  AltColor: index color to fill blanks/border
+Radius: size of the hexagon
 	
-  Radius: size of the hexagon
-	
-  Rotation: which axis to face
+Rotation: which axis to face
