@@ -1,6 +1,6 @@
 // xs_begin
 // author : 'malinfei'
-// arg : { name = 'Mode'  var = 'm_mode'  range = '0 3'  value = '0'  step = '1'  precision = '0' }
+// arg : { name = 'Mode'  var = 'm_mode'  range = '0 4'  value = '0'  step = '1'  precision = '0' }
 // arg : { name = 'AltColor'  var = 'm_alt_color'  range = '0 255'  value = '0'  step = '1'  precision = '0' }
 // arg : { name = 'Radius'  var = 'm_radius'  range = '4 127'  value = '9'  step = '2'  precision = '0' }
 // arg : { name = 'Rotation'  var = 'm_ration'  range = '0 3'  value = '0'  step = '1'  precision = '0' }
@@ -10,12 +10,14 @@
 // 1: fill volume with AltColor and current color index on border
 // 2: only one
 // 3: expand border with selected color(just click execute shader!)
+// 4: cull border(just click execute shader!)
 int mode = int(m_mode);											
 int radius = int(floor(m_radius * 0.5) * 2 + 1);						// not include center, require odd number
 int rot = int(m_ration);
 // runtime
 bool bMultiHexagon = mode != 2;
 bool bExpandMode = mode == 3;
+bool bCullMode = mode == 4;
 float borderColor = mode == 0 ? float(m_alt_color) : i_color_index;
 float fillColor = mode == 0 ? i_color_index : float(m_alt_color);
 float step = 0.5;														// step = 2
@@ -214,7 +216,32 @@ float ExpandHexagon(vec3 v)
 	return oc;
 }
 
+float CullHexagon(vec3 v)
+{
+	float oc = voxel(ApplyRotation(v, true));
+	if (oc != 0)
+	{
+		vec3 c = GetCenter(v, false);
+		float cp = GetBorderClockPos(c, v);
+		if (cp != 0)
+		{
+			return fillColor;
+		}
+		else
+		{
+			// try diagoanl
+			c = GetCenter(v, true);
+			cp = GetBorderClockPos(c, v);
+			if (cp != 0)
+			{
+				return fillColor;
+			}
+		}
+	}
+	return oc;
+}
+
 float map(vec3 v) 
 {
-	return bExpandMode ? ExpandHexagon(ApplyRotation(v, false)) : GenerateHexagon(ApplyRotation(i_volume_size, false), ApplyRotation(v, false));
+	return bExpandMode ? ExpandHexagon(ApplyRotation(v, false)) : (bCullMode ? CullHexagon(ApplyRotation(v, false)) : GenerateHexagon(ApplyRotation(i_volume_size, false), ApplyRotation(v, false)));
 }
