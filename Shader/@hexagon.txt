@@ -2,7 +2,7 @@
 // author : 'malinfei'
 // arg : { name = 'Mode'  var = 'm_mode'  range = '0 4'  value = '0'  step = '1'  precision = '0' }
 // arg : { name = 'AltColor'  var = 'm_alt_color'  range = '0 255'  value = '0'  step = '1'  precision = '0' }
-// arg : { name = 'Radius'  var = 'm_radius'  range = '4 127'  value = '9'  step = '2'  precision = '0' }
+// arg : { name = 'Radius'  var = 'm_radius'  range = '4 127'  value = '8'  step = '2'  precision = '0' }
 // arg : { name = 'Rotation'  var = 'm_ration'  range = '0 3'  value = '0'  step = '1'  precision = '0' }
 // xs_end
 
@@ -12,24 +12,30 @@
 // 3: expand border with selected color(just click execute shader!)
 // 4: cull border(just click execute shader!)
 int mode = int(m_mode);											
-int radius = int(floor(m_radius * 0.5) * 2 + 1);						// not include center, require odd number
-int rot = int(m_ration);
+int radius = int(floor(m_radius * 0.5) * 2);								// require even number
+int innerRadius = round(radius * 0.866);									// we use two circle to define heigh and width
+int rot = int(m_ration);													// flat-top orientation by default, see https://www.redblobgames.com/grids/hexagons/
 // runtime
 bool bMultiHexagon = mode != 2;
 bool bExpandMode = mode == 3;
 bool bCullMode = mode == 4;
 float borderColor = mode == 0 ? float(m_alt_color) : i_color_index;
 float fillColor = mode == 0 ? i_color_index : float(m_alt_color);
-float step = 0.5;														// step = 2
-int diameter = radius * 2;												// not include center
-int lineSize = int((radius - floor(radius * step)) * 2 + 1);
-int halfLineSize = int(floor(lineSize * 0.5));
-int oneRowOffset = radius + halfLineSize;
-int twoRowOffset = diameter + lineSize - 1;
+float step = 0.5;															// step = 2
+int halfRowHeight = innerRadius;
+int rowHeight = halfRowHeight * 2;											// int((radius - floor(radius * step)) * 2 + 1);
+int oneRowOffset = halfRowHeight;
+int twoRowOffset = rowHeight;
+int halfColumnWidth = radius;
+int quarterColumnWidth = floor(halfColumnWidth * 0.5);
+int oneColumnOffset = radius * 1.5;
+int twoColumnOffset = radius * 3;
+// debug
+int centerColor = fillColor;
 
 vec3 ApplyRotation(vec3 v, bool bReverse)
 {
-	if (rot == 0) 
+	if (rot == 1)
 	{
 		return bReverse ? v.yxz : v.yxz;
 	}
@@ -46,17 +52,16 @@ vec3 ApplyRotation(vec3 v, bool bReverse)
 
 float ChooseColor(float b)
 {
-	return b == 1 ? borderColor : (b == 2 ? fillColor : 0);
+	return b == 1 ? borderColor : (b == 2 ? fillColor : (b == 3 ? centerColor : 0));
 }
 
 vec3 GetCenter(vec3 v, bool bDiagonal)
 {
-	float xStep = floor(v.x / diameter);
+	float xStep = floor(v.x / twoColumnOffset);
 	float yStep = floor(v.y / twoRowOffset);
-	float xDiagStep = floor((v.x + radius) / diameter);
+	float xDiagStep = floor((v.x + oneColumnOffset) / twoColumnOffset);
 	float yDiagStep = floor((v.y + oneRowOffset) / twoRowOffset);
-	// radius - oneRowOffset = -halfLineSize
-	return bDiagonal ? vec3(xDiagStep * diameter, yDiagStep * twoRowOffset - halfLineSize, v.z) : vec3(xStep * diameter + radius, yStep * twoRowOffset + radius, v.z);
+	return bDiagonal ? vec3(xDiagStep * twoColumnOffset - quarterColumnWidth, yDiagStep * twoRowOffset, v.z) : vec3(xStep * twoColumnOffset + halfColumnWidth, yStep * twoRowOffset + halfRowHeight, v.z);
 }
 
 float GetSharedColor(float cp, vec3 c, vec3 v, float oc)
@@ -66,47 +71,47 @@ float GetSharedColor(float cp, vec3 c, vec3 v, float oc)
 		if (cp <= 2 || cp == 12)
 		{
 			// top right
-			if (voxel(ApplyRotation(c + vec3(radius, oneRowOffset, 0), true)) == i_color_index)
+			if (voxel(ApplyRotation(c + vec3(oneColumnOffset, oneRowOffset, 0), true)) == i_color_index)
 			{
 				return i_color_index;
 			}
 		}
-		if (2 <= cp && cp <= 4)
+		if (cp >= 2 && cp <= 4)
 		{
 			// right
-			if (voxel(ApplyRotation(c + vec3(diameter, 0, 0), true)) == i_color_index)
+			if (voxel(ApplyRotation(c + vec3(twoColumnOffset, 0, 0), true)) == i_color_index)
 			{
 				return i_color_index;
 			}
 		}
-		if (4 <= cp && cp <= 6)
+		if (cp >= 4 && cp <= 6)
 		{
 			// bottom right
-			if (voxel(ApplyRotation(c + vec3(radius, -oneRowOffset, 0), true)) == i_color_index)
+			if (voxel(ApplyRotation(c + vec3(oneColumnOffset, -oneRowOffset, 0), true)) == i_color_index)
 			{
 				return i_color_index;
 			}
 		} 
-		if (6 <= cp && cp <= 8)
+		if (cp >= 6 && cp <= 8)
 		{
 			// bottom left
-			if (voxel(ApplyRotation(c + vec3(-radius, -oneRowOffset, 0), true)) == i_color_index)
+			if (voxel(ApplyRotation(c + vec3(-oneColumnOffset, -oneRowOffset, 0), true)) == i_color_index)
 			{
 				return i_color_index;
 			}
 		}
-		if (8 <= cp && cp <= 10)
+		if (cp >= 8 && cp <= 10)
 		{
 			// left
-			if (voxel(ApplyRotation(c + vec3(-diameter, 0, 0), true)) == i_color_index)
+			if (voxel(ApplyRotation(c + vec3(-twoColumnOffset, 0, 0), true)) == i_color_index)
 			{
 				return i_color_index;
 			}
 		}
-		if (10 <= cp && cp <= 12)
+		if (cp >= 10 && cp <= 12)
 		{
 			// top left
-			if (voxel(ApplyRotation(c + vec3(-radius, oneRowOffset, 0), true)) == i_color_index)
+			if (voxel(ApplyRotation(c + vec3(-oneColumnOffset, oneRowOffset, 0), true)) == i_color_index)
 			{
 				return i_color_index;
 			}
@@ -117,13 +122,23 @@ float GetSharedColor(float cp, vec3 c, vec3 v, float oc)
 
 float IsInbound(vec3 c, vec3 v)
 {
-	vec3 dist = floor(v - c);	// v is at the center of voxel, such as vec3( 1.5, 2.5, 4.5 )
+	// 0 = outside 1 = border 2 = inside 3 = center
+	vec3 dist = floor(v - c);											// v is at the center of voxel, such as vec3( 1.5, 2.5, 4.5 )
 	float x2c = abs(dist.x);
 	float y2c = abs(dist.y);
-	// 0 = outside 1 = border 2 = inside 
-	if (x2c <= radius && y2c <= radius - floor(x2c * step))
+	if (x2c == 0 && y2c == 0)
 	{
-		return x2c == radius || y2c == radius - floor(x2c * step) ? 1 : 2;
+		return 3;
+	}
+
+	float offset = floor(y2c / 3) * 2 + (mod(y2c, 3) == 2 ? 1 : 0);		// we switch between one block(odd) and two block(even) edges
+	if (x2c <= halfColumnWidth - offset && y2c <= innerRadius)
+	{
+		return (x2c == halfColumnWidth - offset || y2c == innerRadius) ? 1 : 2;
+	}
+	else
+	{
+		return 0;
 	}
 }
 
@@ -139,13 +154,13 @@ float GetBorderClockPos(vec3 c, vec3 v)
 		bool bLeft = dist.x < 0;
 		if (bTop)
 		{
-			if (dist.y == radius && dist.x == 0)
+			if (dist.y == halfRowHeight && dist.x == 0)
 			{
 				return 12;
 			}
-			else if (dist.y >= halfLineSize)
+			else if (dist.y >= quarterColumnWidth)
 			{
-				return abs(dist.x) == radius ? (bLeft ? 10 : 2) : (bLeft ? 11 : 1);
+				return abs(dist.x) == halfColumnWidth ? (bLeft ? 10 : 2) : (bLeft ? 11 : 1);
 			}
 			else
 			{
@@ -154,13 +169,13 @@ float GetBorderClockPos(vec3 c, vec3 v)
 		}
 		else
 		{
-			if (dist.y == -radius && dist.x == 0)
+			if (dist.y == -halfRowHeight && dist.x == 0)
 			{
 				return 6;
 			}
-			else if (dist.y <= -halfLineSize)
+			else if (dist.y <= -quarterColumnWidth)
 			{
-				return abs(dist.x) == radius ? (bLeft ? 8 : 4) : (bLeft ? 7 : 5);
+				return abs(dist.x) == halfColumnWidth ? (bLeft ? 8 : 4) : (bLeft ? 7 : 5);
 			}
 			else
 			{
@@ -187,7 +202,7 @@ float GenerateHexagon(vec3 volume_size, vec3 v)
 	}
 	else
 	{
-		return ChooseColor(IsInbound(vec3(radius, radius, v.z), v));
+		return ChooseColor(IsInbound(vec3(halfColumnWidth, halfRowHeight, v.z), ApplyRotation(v, true)));		// mostly for debug, so no rotation
 	}
 }
 
