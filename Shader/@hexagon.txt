@@ -7,18 +7,18 @@
 // xs_end
 
 // 0: fill volume with current color index and AltColor on border
-// 1: fill volume with AltColor and current color index on border
-// 2: only one
-// 3: expand border with selected color(just click execute shader!)
-// 4: cull border(just click execute shader!)
+// 1: expand border with selected color(just click execute shader!)
+// 2: cull border(just click execute shader!)
+// 3: fill volume with AltColor and current color index on border
+// 4: only one
 int mode = int(m_mode);											
 int radius = int(floor(m_radius * 0.5) * 2);								// require even number
 int innerRadius = round(radius * 0.866);									// we use two circle to define heigh and width
 int rot = int(m_ration);													// flat-top orientation by default, see https://www.redblobgames.com/grids/hexagons/
 // runtime
-bool bMultiHexagon = mode != 2;
-bool bExpandMode = mode == 3;
-bool bCullMode = mode == 4;
+bool bMultiHexagon = mode != 4;
+bool bExpandMode = mode == 1;
+bool bCullMode = mode == 2;
 float borderColor = mode == 0 ? float(m_alt_color) : i_color_index;
 float fillColor = mode == 0 ? i_color_index : float(m_alt_color);
 float step = 0.5;															// step = 2
@@ -32,7 +32,10 @@ int oneColumnOffset = radius * 1.5;
 int twoColumnOffset = radius * 3;
 // debug
 int centerColor = fillColor;
+int DebugExpand = 0;
+int DebugClockPos = 0;
 
+// ------------------------------------ mode 1 ----------------------------------------
 vec3 ApplyRotation(vec3 v, bool bReverse)
 {
 	if (rot == 1)
@@ -64,62 +67,6 @@ vec3 GetCenter(vec3 v, bool bDiagonal)
 	return bDiagonal ? vec3(xDiagStep * twoColumnOffset - quarterColumnWidth, yDiagStep * twoRowOffset, v.z) : vec3(xStep * twoColumnOffset + halfColumnWidth, yStep * twoRowOffset + halfRowHeight, v.z);
 }
 
-float GetSharedColor(float cp, vec3 c, vec3 v, float oc)
-{
-	if (cp != 0)
-	{
-		if (cp <= 2 || cp == 12)
-		{
-			// top right
-			if (voxel(ApplyRotation(c + vec3(oneColumnOffset, oneRowOffset, 0), true)) == i_color_index)
-			{
-				return i_color_index;
-			}
-		}
-		if (cp >= 2 && cp <= 4)
-		{
-			// right
-			if (voxel(ApplyRotation(c + vec3(twoColumnOffset, 0, 0), true)) == i_color_index)
-			{
-				return i_color_index;
-			}
-		}
-		if (cp >= 4 && cp <= 6)
-		{
-			// bottom right
-			if (voxel(ApplyRotation(c + vec3(oneColumnOffset, -oneRowOffset, 0), true)) == i_color_index)
-			{
-				return i_color_index;
-			}
-		} 
-		if (cp >= 6 && cp <= 8)
-		{
-			// bottom left
-			if (voxel(ApplyRotation(c + vec3(-oneColumnOffset, -oneRowOffset, 0), true)) == i_color_index)
-			{
-				return i_color_index;
-			}
-		}
-		if (cp >= 8 && cp <= 10)
-		{
-			// left
-			if (voxel(ApplyRotation(c + vec3(-twoColumnOffset, 0, 0), true)) == i_color_index)
-			{
-				return i_color_index;
-			}
-		}
-		if (cp >= 10 && cp <= 12)
-		{
-			// top left
-			if (voxel(ApplyRotation(c + vec3(-oneColumnOffset, oneRowOffset, 0), true)) == i_color_index)
-			{
-				return i_color_index;
-			}
-		}
-	}
-	return oc;
-}
-
 float IsInbound(vec3 c, vec3 v)
 {
 	// 0 = outside 1 = border 2 = inside 3 = center
@@ -142,50 +89,6 @@ float IsInbound(vec3 c, vec3 v)
 	}
 }
 
-float GetBorderClockPos(vec3 c, vec3 v)
-{
-	// 0 means invalid
-	float b = IsInbound(c, v);
-	if (b == 1)
-	{
-		// on border we check diagonal
-		vec3 dist = floor(v - c);
-		bool bTop = dist.y >= 0;		// y == 0 doesn't have specific meaning
-		bool bLeft = dist.x < 0;
-		if (bTop)
-		{
-			if (dist.y == halfRowHeight && dist.x == 0)
-			{
-				return 12;
-			}
-			else if (dist.y >= quarterColumnWidth)
-			{
-				return abs(dist.x) == halfColumnWidth ? (bLeft ? 10 : 2) : (bLeft ? 11 : 1);
-			}
-			else
-			{
-				return bLeft ? 9 : 3;
-			}
-		}
-		else
-		{
-			if (dist.y == -halfRowHeight && dist.x == 0)
-			{
-				return 6;
-			}
-			else if (dist.y <= -quarterColumnWidth)
-			{
-				return abs(dist.x) == halfColumnWidth ? (bLeft ? 8 : 4) : (bLeft ? 7 : 5);
-			}
-			else
-			{
-				return bLeft ? 9 : 3;
-			}
-		}
-	}
-	return 0;
-}
-
 float GenerateHexagon(vec3 volume_size, vec3 v)
 {
 	if (bMultiHexagon)
@@ -206,6 +109,109 @@ float GenerateHexagon(vec3 volume_size, vec3 v)
 	}
 }
 
+// ------------------------------------ mode 2 ----------------------------------------
+float GetBorderClockPos(vec3 c, vec3 v)
+{
+	// here we figure out points shared by 3 hexagon : 1, 3, 5, 7, 9, 11. others are shared by 2 hexagon. P.S. base on flat-top
+	// 0 means invalid. 
+	float b = IsInbound(c, v);
+	if (b == 1)
+	{
+		// on border we check diagonal
+		vec3 dist = floor(v - c);
+		bool bTop = dist.y >= 0;		// y == 0 doesn't have specific meaning
+		bool bLeft = dist.x < 0;
+		if (bTop)
+		{
+			if (dist.y == halfRowHeight)
+			{
+				return abs(dist.x) == quarterColumnWidth ? (bLeft ? 11 : 1) :  12;
+			}
+			else if (abs(dist.x) == halfColumnWidth && dist.y == 0)
+			{
+				return bLeft ? 9 : 3;
+			}
+			else
+			{
+				return bLeft ? 10 : 2;
+			}
+		}
+		else
+		{
+			if (dist.y == -halfRowHeight)
+			{
+				return abs(dist.x) == quarterColumnWidth ? (bLeft ? 7 : 5) :  6;
+			}
+			else if (abs(dist.x) == halfColumnWidth && dist.y == 0)
+			{
+				return bLeft ? 9 : 3;
+			}
+			else
+			{
+				return bLeft ? 8 : 4;
+			}
+		}
+	}
+	return 0;
+}
+
+float GetSharedColor(float cp, vec3 c, vec3 v, float oc)
+{
+	// base on GetBorderClockPos(). shared by 3 hexagon : 1, 3, 5, 7, 9, 11. others are shared by 2 hexagon.
+	if (cp != 0)
+	{
+		// top
+		if (cp == 11 || cp == 12 || cp == 1)
+		{
+			if (voxel(ApplyRotation(c + vec3(0, twoRowOffset, 0), true)) == i_color_index)
+			{
+				return i_color_index;
+			}
+		}
+		// top right
+		if (cp >= 1 && cp <= 3)
+		{
+			if (voxel(ApplyRotation(c + vec3(oneColumnOffset, oneRowOffset, 0), true)) == i_color_index)
+			{
+				return i_color_index;
+			}
+		}
+		// bottom right
+		if (cp >= 3 && cp <= 5)
+		{
+			if (voxel(ApplyRotation(c + vec3(oneColumnOffset, -oneRowOffset, 0), true)) == i_color_index)
+			{
+				return i_color_index;
+			}
+		}
+		// bottom
+		if (cp == 5 || cp == 6 || cp == 7)
+		{
+			if (voxel(ApplyRotation(c + vec3(0, -twoRowOffset, 0), true)) == i_color_index)
+			{
+				return i_color_index;
+			}
+		}
+		// bottom left
+		if (cp >= 7 && cp <= 9)
+		{
+			if (voxel(ApplyRotation(c + vec3(-oneColumnOffset, -oneRowOffset, 0), true)) == i_color_index)
+			{
+				return i_color_index;
+			}
+		}
+		// top left
+		if (cp >= 9 && cp <= 11)
+		{
+			if (voxel(ApplyRotation(c + vec3(-oneColumnOffset, oneRowOffset, 0), true)) == i_color_index)
+			{
+				return i_color_index;
+			}
+		}
+	}
+	return oc;
+}
+
 float ExpandHexagon(vec3 v)
 {
 	float oc = voxel(ApplyRotation(v, true));
@@ -213,8 +219,20 @@ float ExpandHexagon(vec3 v)
 	{
 		vec3 c = GetCenter(v, false);
 		float cp = GetBorderClockPos(c, v);
+		// to draw which center current voxel belongs
+		if (DebugExpand == 1)
+		{
+			return c.y;
+		}
+		// 
 		if (cp != 0)
 		{
+			//
+			if (DebugClockPos == 1)
+			{
+				return cp;
+			}
+			//
 			return voxel(ApplyRotation(c, true)) == i_color_index ? i_color_index : GetSharedColor(cp, c, v, oc);
 		}
 		else
@@ -224,13 +242,37 @@ float ExpandHexagon(vec3 v)
 			cp = GetBorderClockPos(c, v);
 			if (cp != 0)
 			{
+				//
+				if (DebugClockPos == 1)
+				{
+					return cp;
+				}
+				//
 				return voxel(ApplyRotation(c, true)) == i_color_index ? i_color_index : GetSharedColor(cp, c, v, oc);
 			}
 		}
 	}
+	// to draw center
+	if (DebugExpand > 0)
+	{
+		vec3 c = GetCenter(v, false);
+		vec3 dist = floor(v - c);
+		if(dist.x == 0 && dist.y == 0)
+		{
+			return c.y;
+		}
+		c = GetCenter(v, true);
+		dist = floor(v - c);
+		if(dist.x == 0 && dist.y == 0)
+		{
+			return c.y;
+		}
+	}
+	//
 	return oc;
 }
 
+// ------------------------------------ mode 3 ----------------------------------------
 float CullHexagon(vec3 v)
 {
 	float oc = voxel(ApplyRotation(v, true));
