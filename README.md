@@ -122,28 +122,29 @@ Simply put under MagicaVoxel's shader folder and it will be available on next bo
 ## **Hexagon Generator**
 
 You can easily generate hexagon tile using shader tool like this:
-
 ![image](https://github.com/KidsReturn/MagicaVoxelShader/assets/41110770/633b5d46-eea7-4e50-8bda-6ac2b4580aeb)
 
 few click with face tool, you will be able to create hexagon-based terrain:
-
-![image](https://github.com/KidsReturn/MagicaVoxelShader/assets/41110770/4dcd5e8e-c541-4c3e-af35-6b445036aa18)
+![屏幕截图 2024-11-11 212927](https://github.com/user-attachments/assets/e4dfd783-4775-4a81-9d5f-f5ad029e9e45)
 
 ## **Arguments:**
 
 Mode:
 
-0 - fill volume with current color index and AltColor on border
+0: fill volume with current color index and AltColor on border
 ![屏幕截图 2024-03-31 145205](https://github.com/KidsReturn/MagicaVoxelShader/assets/41110770/9ac3299d-137d-4413-a142-8dba6e468e4c)
 
-1 - ill volume with AltColor and current color index on border
+1: expand border with selected color(just click execute shader!)
+![Snipaste_2024-04-13_15-27-55](https://github.com/KidsReturn/MagicaVoxelTools/assets/41110770/69dec31b-a815-407e-befa-5e4eb97007a3)
+
+2: cull border(just click execute shader!)
+
+3: fill volume with AltColor and current color index on border
 ![屏幕截图 2024-03-31 145225](https://github.com/KidsReturn/MagicaVoxelShader/assets/41110770/ec332c86-ca9d-402c-bba5-ad2424cc3d94)
 
-2 - only generate one hexagon
-![屏幕截图 2024-03-31 145118](https://github.com/KidsReturn/MagicaVoxelShader/assets/41110770/de6dad66-9527-4512-8ee3-ee21b26e6fb8)
+4 - only generate one hexagon
 
-3 - expand border with selected color(just click execute shader!)
-![Snipaste_2024-04-13_15-27-55](https://github.com/KidsReturn/MagicaVoxelTools/assets/41110770/69dec31b-a815-407e-befa-5e4eb97007a3)
+![屏幕截图 2024-03-31 145118](https://github.com/KidsReturn/MagicaVoxelShader/assets/41110770/de6dad66-9527-4512-8ee3-ee21b26e6fb8)
 
 AltColor: index color to fill blanks/border
 	
