@@ -2,7 +2,7 @@
 // author : 'malinfei'
 // arg : { name = 'Mode'  var = 'm_mode'  range = '0 4'  value = '0'  step = '1'  precision = '0' }
 // arg : { name = 'AltColor'  var = 'm_alt_color'  range = '0 255'  value = '0'  step = '1'  precision = '0' }
-// arg : { name = 'Radius'  var = 'm_radius'  range = '4 127'  value = '8'  step = '2'  precision = '0' }
+// arg : { name = 'HalfWidth'  var = 'm_half_width'  range = '4 127'  value = '8'  step = '2'  precision = '0' }
 // arg : { name = 'Rotation'  var = 'm_ration'  range = '0 3'  value = '0'  step = '1'  precision = '0' }
 // xs_end
 
@@ -12,9 +12,10 @@
 // 3: fill volume with AltColor and current color index on border
 // 4: only one
 int mode = int(m_mode);											
-int radius = int(floor(m_radius * 0.5) * 2);								// require even number
-int innerRadius = round(radius * 0.866);									// we use two circle to define heigh and width
+int halfWidth = int(floor(m_half_width * 0.5) * 2);							// require even number
+int halfHeight = round(halfWidth * 0.866);									// we use two circle to define heigh and width
 int rot = int(m_ration);													// flat-top orientation by default, see https://www.redblobgames.com/grids/hexagons/
+float PI = 3.1415926535897932;
 // runtime
 bool bMultiHexagon = mode != 4;
 bool bExpandMode = mode == 1;
@@ -22,14 +23,11 @@ bool bCullMode = mode == 2;
 float borderColor = mode == 0 ? float(m_alt_color) : i_color_index;
 float fillColor = mode == 0 ? i_color_index : float(m_alt_color);
 float step = 0.5;															// step = 2
-int halfRowHeight = innerRadius;
-int rowHeight = halfRowHeight * 2;											// int((radius - floor(radius * step)) * 2 + 1);
-int oneRowOffset = halfRowHeight;
-int twoRowOffset = rowHeight;
-int halfColumnWidth = radius;
-int quarterColumnWidth = floor(halfColumnWidth * 0.5);
-int oneColumnOffset = radius * 1.5;
-int twoColumnOffset = radius * 3;
+int oneRowOffset = halfHeight;
+int twoRowOffset = halfHeight * 2;
+int quarterWidth = floor(halfWidth * 0.5);
+int oneColumnOffset = halfWidth * 1.5;
+int twoColumnOffset = halfWidth * 3;
 // debug
 int centerColor = fillColor;
 int DebugExpand = 0;
@@ -64,13 +62,13 @@ vec3 GetCenter(vec3 v, bool bDiagonal)
 	float yStep = floor(v.y / twoRowOffset);
 	float xDiagStep = floor((v.x + oneColumnOffset) / twoColumnOffset);
 	float yDiagStep = floor((v.y + oneRowOffset) / twoRowOffset);
-	return bDiagonal ? vec3(xDiagStep * twoColumnOffset - quarterColumnWidth, yDiagStep * twoRowOffset, v.z) : vec3(xStep * twoColumnOffset + halfColumnWidth, yStep * twoRowOffset + halfRowHeight, v.z);
+	return bDiagonal ? vec3(xDiagStep * twoColumnOffset - quarterWidth, yDiagStep * twoRowOffset, v.z) : vec3(xStep * twoColumnOffset + halfWidth, yStep * twoRowOffset + halfHeight, v.z);
 }
 
 float IsInbound(vec3 c, vec3 v)
 {
 	// 0 = outside 1 = border 2 = inside 3 = center
-	vec3 dist = floor(v - c);											// v is at the center of voxel, such as vec3( 1.5, 2.5, 4.5 )
+	vec3 dist = floor(v - c);																// v is at the center of voxel, such as vec3( 1.5, 2.5, 4.5 )
 	float x2c = abs(dist.x);
 	float y2c = abs(dist.y);
 	if (x2c == 0 && y2c == 0)
@@ -78,10 +76,11 @@ float IsInbound(vec3 c, vec3 v)
 		return 3;
 	}
 
-	float offset = floor(y2c / 3) * 2 + (mod(y2c, 3) == 2 ? 1 : 0);		// we switch between one block(odd) and two block(even) edges
-	if (x2c <= halfColumnWidth - offset && y2c <= innerRadius)
+	float xDist = tan(30 * PI / 180) * y2c + 0.5;											// 0.5 for center of farest point
+	float xOffset = floor(xDist) + (fract(xDist) > 0.5 && y2c != halfHeight ? 1 : 0);		// y2c != halfHeight is because we are using cube to approximate regular hexagon, so the value is not exactly there, need clamp
+	if (x2c <= halfWidth - xOffset && y2c <= halfHeight)
 	{
-		return (x2c == halfColumnWidth - offset || y2c == innerRadius) ? 1 : 2;
+		return (x2c == halfWidth - xOffset || y2c == halfHeight) ? 1 : 2;
 	}
 	else
 	{
@@ -105,7 +104,7 @@ float GenerateHexagon(vec3 volume_size, vec3 v)
 	}
 	else
 	{
-		return ChooseColor(IsInbound(vec3(halfColumnWidth, halfRowHeight, v.z), ApplyRotation(v, true)));		// mostly for debug, so no rotation
+		return ChooseColor(IsInbound(vec3(halfWidth, halfHeight, v.z), ApplyRotation(v, true)));		// mostly for debug, so no rotation
 	}
 }
 
@@ -123,11 +122,11 @@ float GetBorderClockPos(vec3 c, vec3 v)
 		bool bLeft = dist.x < 0;
 		if (bTop)
 		{
-			if (dist.y == halfRowHeight)
+			if (dist.y == halfHeight)
 			{
-				return abs(dist.x) == quarterColumnWidth ? (bLeft ? 11 : 1) :  12;
+				return abs(dist.x) == quarterWidth ? (bLeft ? 11 : 1) :  12;
 			}
-			else if (abs(dist.x) == halfColumnWidth && dist.y == 0)
+			else if (abs(dist.x) == halfWidth && dist.y == 0)
 			{
 				return bLeft ? 9 : 3;
 			}
@@ -138,11 +137,11 @@ float GetBorderClockPos(vec3 c, vec3 v)
 		}
 		else
 		{
-			if (dist.y == -halfRowHeight)
+			if (dist.y == -halfHeight)
 			{
-				return abs(dist.x) == quarterColumnWidth ? (bLeft ? 7 : 5) :  6;
+				return abs(dist.x) == quarterWidth ? (bLeft ? 7 : 5) :  6;
 			}
-			else if (abs(dist.x) == halfColumnWidth && dist.y == 0)
+			else if (abs(dist.x) == halfWidth && dist.y == 0)
 			{
 				return bLeft ? 9 : 3;
 			}
@@ -157,7 +156,13 @@ float GetBorderClockPos(vec3 c, vec3 v)
 
 float GetSharedColor(float cp, vec3 c, vec3 v, float oc)
 {
-	// base on GetBorderClockPos(). shared by 3 hexagon : 1, 3, 5, 7, 9, 11. others are shared by 2 hexagon.
+	// base on GetBorderClockPos(). shared by 3 hexagon : 1, 3, 5, 7, 9, 11. shared by 2 hexagon : 6, 12. others are not shared. 
+	// P.S. you should revisit this after IsInBound is modified!
+	if (cp == 2 || cp == 4 || cp == 8 || cp == 10)
+	{
+		return oc;
+	}
+
 	if (cp != 0)
 	{
 		// top
