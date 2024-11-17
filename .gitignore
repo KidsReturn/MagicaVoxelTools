@@ -1,6 +1,7 @@
 // this is nested in MagicaVoxel folder, so ignore everything by default
 */
 
+!Code/
 // unignore sub-folder down the chain to add things we need to sync
 !vox/
 vox/*
