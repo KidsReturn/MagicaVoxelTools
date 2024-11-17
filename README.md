@@ -38,7 +38,7 @@ few click with face tool, you will be able to create hexagon-based terrain:
 
 3: fill volume with AltColor and current color index on border
 
-4 - only generate one hexagon
+4: only generate one hexagon
 
 AltColor: index color to fill blanks/border
 	
