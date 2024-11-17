@@ -1,13 +1,13 @@
 # **Problem**
 Currently I'm developing a SLG game which ideally has a voxel based hexagon tile map(yea, it's a weired combination).
 
-There are two tools fits this need:
+There are two applications fit this need:
 1) MagicaVoxel to carve the map.
 2) VoxelPlugin to import it and render in Unreal Engine.
 
 But while testing them out, few obstacles I bump into:
 1) MagicaVoxel has a 256^3 limit per object, and VoxelPlugin can only import one object at a time.
-2) The Hexagons have ugly edges since they are approximated by cubes.![屏幕截图 2024-11-17 233956](https://github.com/user-attachments/assets/c6f8a9f6-b4d1-457c-9050-a87985f3d2cb)
+2) VoxelPlugin's importer have ugly edges since they are approximated by cubes.![屏幕截图 2024-11-17 233956](https://github.com/user-attachments/assets/c6f8a9f6-b4d1-457c-9050-a87985f3d2cb)
 
 
 # **Solution**
