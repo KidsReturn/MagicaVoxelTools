@@ -98,7 +98,7 @@ float GenerateHexagon(vec3 volume_size, vec3 v)
 		{
 			return ChooseColor(b);
 		}
-		// try diagoanl
+		// try diagonal
 		c = GetCenter(v, true);
 		return ChooseColor(IsInbound(c, v));
 	}
@@ -242,7 +242,7 @@ float ExpandHexagon(vec3 v)
 		}
 		else
 		{
-			// try diagoanl
+			// try diagonal
 			c = GetCenter(v, true);
 			cp = GetBorderClockPos(c, v);
 			if (cp != 0)
@@ -291,7 +291,7 @@ float CullHexagon(vec3 v)
 		}
 		else
 		{
-			// try diagoanl
+			// try diagonal
 			c = GetCenter(v, true);
 			cp = GetBorderClockPos(c, v);
 			if (cp != 0)
