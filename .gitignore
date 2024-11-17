@@ -1,0 +1,11 @@
+// this is nested in MagicaVoxel folder, so ignore everything by default
+*/
+
+// unignore sub-folder down the chain to add things we need to sync
+!vox/
+vox/*
+!vox/Example/
+!vox/Example/*
+
+MagicaVoxel.exe
+readme.txt
