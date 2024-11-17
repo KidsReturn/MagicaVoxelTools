@@ -2,7 +2,7 @@
 Currently I'm developing a SLG game which ideally has a voxel based hexagon tile map(yea, it's a weired combination).
 
 There are two tools fits this need:
-1) MagicaVoxel to generate the map.
+1) MagicaVoxel to carve the map.
 2) VoxelPlugin to import it and render in Unreal Engine.
 
 But while testing them out, few obstacles I bump into:
