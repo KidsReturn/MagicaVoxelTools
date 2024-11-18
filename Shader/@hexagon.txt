@@ -217,7 +217,7 @@ float GetSharedColor(float cp, vec3 c, vec3 v, float oc)
 	return oc;
 }
 
-float ExpandHexagon(vec3 v)
+float ExpandHexagon(vec3 volume_size, vec3 v)
 {
 	float oc = voxel(ApplyRotation(v, true));
 	if (oc == 0)
@@ -252,7 +252,16 @@ float ExpandHexagon(vec3 v)
 				{
 					return cp;
 				}
-				//
+				if (c.y <= 0 || c.y >= volume_size.y || c.x <= 0 || c.x >= volume_size.x)
+				{
+					vec3 toC = c - v;
+					// it maybe rotated, so here we minus 2 for both case(short one should be minus 1)
+					bool bFarY = abs(toC.y) >= halfHeight - 2;
+					bool bFarX = abs(toC.x) >= halfWidth - 2;
+					float xOffset = bFarY ? 0 : (bFarX ? 2 : 1 ) * (toC.x > 0 ? 1 : -1);
+					float yOffset = bFarX ? 0 : (bFarY ? 2 : 1 ) * (toC.y > 0 ? 1 : -1);
+					oc = voxel(ApplyRotation(v + vec3(xOffset, yOffset, 0), true)) == i_color_index ? i_color_index : oc;
+				}
 				return voxel(ApplyRotation(c, true)) == i_color_index ? i_color_index : GetSharedColor(cp, c, v, oc);
 			}
 		}
@@ -305,5 +314,5 @@ float CullHexagon(vec3 v)
 
 float map(vec3 v) 
 {
-	return bExpandMode ? ExpandHexagon(ApplyRotation(v, false)) : (bCullMode ? CullHexagon(ApplyRotation(v, false)) : GenerateHexagon(ApplyRotation(i_volume_size, false), ApplyRotation(v, false)));
+	return bExpandMode ? ExpandHexagon(ApplyRotation(i_volume_size, false), ApplyRotation(v, false)) : (bCullMode ? CullHexagon(ApplyRotation(v, false)) : GenerateHexagon(ApplyRotation(i_volume_size, false), ApplyRotation(v, false)));
 }
